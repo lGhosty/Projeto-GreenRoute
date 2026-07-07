@@ -1,159 +1,111 @@
 package controller;
 
+import exception.AutonomiaInsuficienteException;
+import exception.ConectorIncompativelException;
+import exception.ValidacaoException;
 import model.Cidade;
 import model.Eletroposto;
 import model.Veiculo;
 import model.VeiculoEletrico;
 import model.VeiculoHibrido;
-import repository.VeiculoRepository;
 import repository.CidadeRepository;
 import repository.EletropostoRepository;
-import java.util.Scanner;
+import repository.VeiculoRepository;
+
+import java.util.ArrayList;
 
 public class RouteController {
 
-    private VeiculoRepository veiculoRepo;
-    private CidadeRepository cidadeRepo;
-    private EletropostoRepository eletropostoRepo;
-    private Scanner scanner;
+    private final VeiculoRepository veiculoRepository;
+    private final CidadeRepository cidadeRepository;
+    private final EletropostoRepository eletropostoRepository;
 
-    public RouteController(VeiculoRepository veiculoRepo,
-                           CidadeRepository cidadeRepo,
-                           EletropostoRepository eletropostoRepo,
-                           Scanner scanner) {
-        this.veiculoRepo = veiculoRepo;
-        this.cidadeRepo = cidadeRepo;
-        this.eletropostoRepo = eletropostoRepo;
-        this.scanner = scanner;
+    public RouteController(VeiculoRepository veiculoRepository,
+                           CidadeRepository cidadeRepository,
+                           EletropostoRepository eletropostoRepository) {
+        this.veiculoRepository = veiculoRepository;
+        this.cidadeRepository = cidadeRepository;
+        this.eletropostoRepository = eletropostoRepository;
     }
 
-    public void simularViagem() {
-        System.out.println("\n╔══════════════════════════════════════╗");
-        System.out.println("║      SIMULAÇÃO DE VIAGEM             ║");
-        System.out.println("╚══════════════════════════════════════╝");
+    public String planejarRotaSimples(int veiculoId, int cidadeId)
+            throws ValidacaoException, AutonomiaInsuficienteException, ConectorIncompativelException {
 
-        if (veiculoRepo.getTotalVeiculos() == 0) {
-            System.out.println("✘ Nenhum veículo cadastrado. Cadastre um veículo primeiro.");
-            return;
-        }
-
-        System.out.println("\nVeículos disponíveis:");
-        Veiculo[] veiculos = veiculoRepo.listarTodos();
-        for (Veiculo v : veiculos) {
-            System.out.println("  " + v);
-        }
-
-        System.out.print("\nInforme o ID do veículo: ");
-        int veiculoId = Integer.parseInt(scanner.nextLine());
-        Veiculo veiculo = veiculoRepo.buscarPorId(veiculoId);
-
+        Veiculo veiculo = veiculoRepository.buscarPorId(veiculoId);
         if (veiculo == null) {
-            System.out.println("✘ Veículo não encontrado.");
-            return;
+            throw new ValidacaoException("Selecione um veículo válido.");
         }
 
-        if (cidadeRepo.getTotalCidades() == 0) {
-            System.out.println("✘ Nenhuma cidade cadastrada. Cadastre uma cidade primeiro.");
-            return;
+        Cidade cidade = cidadeRepository.buscarPorId(cidadeId);
+        if (cidade == null) {
+            throw new ValidacaoException("Selecione uma cidade válida.");
         }
 
-        System.out.println("\nCidades disponíveis:");
-        Cidade[] cidades = cidadeRepo.listarTodos();
-        for (Cidade c : cidades) {
-            System.out.println("  " + c);
-        }
-
-        System.out.print("\nInforme o ID da cidade de destino: ");
-        int cidadeId = Integer.parseInt(scanner.nextLine());
-        Cidade destino = cidadeRepo.buscarPorId(cidadeId);
-
-        if (destino == null) {
-            System.out.println("✘ Cidade não encontrada.");
-            return;
-        }
-
-        System.out.println("\n══════════════════════════════════════");
-        System.out.println("ANÁLISE DA VIAGEM");
-        System.out.println("══════════════════════════════════════");
-        System.out.println("Veículo  : " + veiculo.getModelo() + " (" + veiculo.getTipo() + ")");
-        System.out.println("Destino  : " + destino.getNome() + " - " + destino.getEstado());
-
-        double distancia = destino.getDistanciaDaCapital();
+        double distancia = cidade.getDistanciaDaCapital();
         double autonomiaAtual = veiculo.getAutonomiaAtual();
 
-        System.out.printf("Distância: %.1f km%n", distancia);
-        System.out.printf("Autonomia atual do veículo: %.1f km (bateria em %.1f%%)%n",
-                autonomiaAtual, veiculo.getCargaBateriaAtual());
+        ArrayList<Eletroposto> postosDaCidade = eletropostoRepository.buscarPorCidadeId(cidadeId);
+
+        if (distancia > autonomiaAtual && postosDaCidade.isEmpty()) {
+            throw new AutonomiaInsuficienteException(
+                    "A autonomia atual do veículo não é suficiente e não existem eletropostos cadastrados nessa cidade."
+            );
+        }
+
+        Eletroposto postoCompativel = null;
+
+        if (veiculo instanceof VeiculoEletrico) {
+            VeiculoEletrico eletrico = (VeiculoEletrico) veiculo;
+
+            for (Eletroposto posto : postosDaCidade) {
+                if (eletrico.isCompativel(posto.getTiposConectoresDisponiveis())) {
+                    postoCompativel = posto;
+                    break;
+                }
+            }
+
+            if (!postosDaCidade.isEmpty() && postoCompativel == null) {
+                throw new ConectorIncompativelException(
+                        "Existem eletropostos cadastrados, mas nenhum é compatível com o conector do veículo."
+                );
+            }
+        }
+
+        StringBuilder resultado = new StringBuilder();
+
+        resultado.append("PLANEJAMENTO DE ROTA - GREENROUTE\n\n");
+        resultado.append("Veículo: ").append(veiculo.getModelo()).append("\n");
+        resultado.append("Tipo: ").append(veiculo.getTipo()).append("\n");
+        resultado.append("Destino: ").append(cidade.getNome()).append("/").append(cidade.getEstado()).append("\n");
+        resultado.append("Distância simulada: ").append(distancia).append(" km\n");
+        resultado.append("Autonomia atual: ").append(String.format("%.1f", autonomiaAtual)).append(" km\n");
+        resultado.append("Tempo de recarga completa: ").append(veiculo.getTempoRecargaCompleta()).append(" minutos\n\n");
+
+        if (distancia <= autonomiaAtual) {
+            resultado.append("Situação: a viagem pode ser realizada com a carga atual.\n");
+        } else {
+            resultado.append("Situação: será necessário planejar uma recarga durante ou ao final da viagem.\n");
+        }
+
+        if (postoCompativel != null) {
+            resultado.append("Eletroposto recomendado: ").append(postoCompativel.getNome()).append("\n");
+            resultado.append("Localização: ").append(postoCompativel.getLocalizacao()).append("\n");
+            resultado.append("Conectores: ").append(postoCompativel.getTiposConectoresDisponiveis()).append("\n");
+            resultado.append("Potência: ").append(postoCompativel.getPotenciaCargaKw()).append(" kW\n");
+            resultado.append("Preço: R$ ").append(String.format("%.2f", postoCompativel.getPrecoPorKwh())).append("/kWh\n");
+        } else {
+            resultado.append("Eletroposto recomendado: sem parada obrigatória.\n");
+        }
 
         if (veiculo instanceof VeiculoHibrido) {
-            VeiculoHibrido vh = (VeiculoHibrido) veiculo;
-            double autonomiaCombustao = vh.getAutonomiaMotorCombustao();
-            double autonomiaTotal = autonomiaAtual + autonomiaCombustao;
-            System.out.printf("Autonomia motor combustão (tanque cheio): %.1f km%n", autonomiaCombustao);
-            System.out.printf("Autonomia total combinada: %.1f km%n", autonomiaTotal);
-
-            if (autonomiaTotal >= distancia) {
-                System.out.println("\n✔ VIAGEM VIÁVEL! O veículo híbrido consegue chegar ao destino.");
-                System.out.printf("  Margem de segurança: %.1f km%n", autonomiaTotal - distancia);
-            } else {
-                System.out.println("\n✘ VIAGEM INVIÁVEL! Nem com motor a combustão é suficiente.");
-                System.out.printf("  Faltam %.1f km de autonomia.%n", distancia - autonomiaTotal);
-                sugerirEletropostos(destino, veiculo);
-            }
-
-        } else {
-            if (autonomiaAtual >= distancia) {
-                System.out.println("\n✔ VIAGEM VIÁVEL! O veículo elétrico chega ao destino.");
-                System.out.printf("  Margem de segurança: %.1f km%n", autonomiaAtual - distancia);
-            } else {
-                System.out.println("\n✘ VIAGEM INVIÁVEL! Autonomia insuficiente para a distância.");
-                System.out.printf("  Faltam %.1f km de autonomia.%n", distancia - autonomiaAtual);
-                sugerirEletropostos(destino, veiculo);
-            }
-        }
-    }
-
-    private void sugerirEletropostos(Cidade cidade, Veiculo veiculo) {
-        System.out.println("\n--- ELETROPOSTOS EM " + cidade.getNome().toUpperCase() + " ---");
-
-        Eletroposto[] postos = eletropostoRepo.buscarPorCidadeId(cidade.getId());
-
-        if (postos.length == 0) {
-            System.out.println("⚠ Nenhum eletroposto cadastrado nesta cidade.");
-            System.out.println("  Considere planejar uma parada em outra cidade com infraestrutura.");
-            return;
+            VeiculoHibrido hibrido = (VeiculoHibrido) veiculo;
+            resultado.append("\nAutonomia adicional por combustão: ")
+                    .append(String.format("%.1f", hibrido.getAutonomiaMotorCombustao()))
+                    .append(" km\n");
         }
 
-        System.out.println("Sugestões de recarga na cidade de destino:");
-        boolean encontrouCompativel = false;
+        resultado.append("\nObservação: esta é uma rota simples. Na próxima etapa, essa lógica será conectada à LLM.");
 
-        for (Eletroposto posto : postos) {
-            boolean compativel = true;
-            String statusCompatibilidade = "";
-
-            if (veiculo instanceof VeiculoEletrico) {
-                VeiculoEletrico ve = (VeiculoEletrico) veiculo;
-                compativel = ve.isCompativel(posto.getTiposConectoresDisponiveis());
-                statusCompatibilidade = compativel ? " [✔ COMPATÍVEL]" : " [✘ CONECTOR INCOMPATÍVEL]";
-                if (compativel) encontrouCompativel = true;
-            } else {
-                encontrouCompativel = true;
-            }
-
-            System.out.println("  " + posto + statusCompatibilidade);
-
-            if (compativel && veiculo instanceof VeiculoEletrico) {
-                VeiculoEletrico ve = (VeiculoEletrico) veiculo;
-                double kwhNecessario = (100.0 - ve.getCargaBateriaAtual()) / 100.0 * ve.getAutonomiaMaxima() * ve.getConsumoKwhPorKm();
-                double custoEstimado = kwhNecessario * posto.getPrecoPorKwh();
-                System.out.printf("    → Custo estimado para carga completa: R$ %.2f (%.1f kWh)%n",
-                        custoEstimado, kwhNecessario);
-            }
-        }
-
-        if (!encontrouCompativel && veiculo instanceof VeiculoEletrico) {
-            System.out.println("\n⚠ Nenhum eletroposto compatível com o conector do veículo nesta cidade!");
-            System.out.println("  Conector do veículo: " + ((VeiculoEletrico) veiculo).getTipoConector());
-        }
+        return resultado.toString();
     }
 }
