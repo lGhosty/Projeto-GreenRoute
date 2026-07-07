@@ -1,143 +1,82 @@
 package controller;
 
+import exception.ValidacaoException;
 import model.Cidade;
 import repository.CidadeRepository;
-import java.util.Scanner;
+
+import java.util.ArrayList;
 
 public class CidadeController {
 
-    private CidadeRepository repository;
-    private Scanner scanner;
+    private final CidadeRepository repository;
 
-    public CidadeController(CidadeRepository repository, Scanner scanner) {
+    public CidadeController(CidadeRepository repository) {
         this.repository = repository;
-        this.scanner = scanner;
     }
 
-    public void cadastrar() {
-        System.out.println("\n--- CADASTRAR CIDADE ---");
+    public void salvar(Cidade cidade) throws ValidacaoException {
+        validar(cidade);
 
-        int id = lerIdUnico();
+        boolean salvou = repository.adicionar(cidade);
 
-        System.out.print("Nome da cidade: ");
-        String nome = scanner.nextLine();
-
-        System.out.print("Estado (UF, ex: PE, SP): ");
-        String estado = scanner.nextLine().toUpperCase();
-
-        System.out.print("Distância da Capital (km): ");
-        double dist = Double.parseDouble(scanner.nextLine());
-
-        Cidade c = new Cidade(id, nome, estado, dist);
-        if (repository.adicionar(c)) {
-            System.out.println("✔ Cidade cadastrada com sucesso!");
-        } else {
-            System.out.println("✘ Erro: ID já cadastrado.");
+        if (!salvou) {
+            throw new ValidacaoException("Já existe uma cidade cadastrada com esse ID.");
         }
     }
 
-    public void listarTodas() {
-        System.out.println("\n--- LISTA DE CIDADES ---");
-        Cidade[] todas = repository.listarTodos();
-        if (todas.length == 0) {
-            System.out.println("Nenhuma cidade cadastrada.");
-            return;
-        }
-        for (Cidade c : todas) {
-            System.out.println(c);
-        }
-        System.out.println("Total: " + todas.length + " cidade(s).");
-    }
+    public void atualizar(Cidade cidade) throws ValidacaoException {
+        validar(cidade);
 
-    public void buscarPorId() {
-        System.out.println("\n--- BUSCAR CIDADE ---");
-        System.out.print("Informe o ID da cidade: ");
-        int id = Integer.parseInt(scanner.nextLine());
+        boolean atualizou = repository.atualizar(cidade);
 
-        Cidade c = repository.buscarPorId(id);
-        if (c != null) {
-            System.out.println("Cidade encontrada:");
-            System.out.println(c);
-        } else {
-            System.out.println("✘ Cidade com ID " + id + " não encontrada.");
+        if (!atualizou) {
+            throw new ValidacaoException("Cidade não encontrada para atualização.");
         }
     }
 
-    public void atualizar() {
-        System.out.println("\n--- ATUALIZAR CIDADE ---");
-        System.out.print("Informe o ID da cidade a atualizar: ");
-        int id = Integer.parseInt(scanner.nextLine());
+    public void remover(int id) throws ValidacaoException {
+        boolean removeu = repository.remover(id);
 
-        Cidade existente = repository.buscarPorId(id);
-        if (existente == null) {
-            System.out.println("✘ Cidade não encontrada.");
-            return;
-        }
-
-        System.out.println("Cidade atual: " + existente);
-        System.out.println("Pressione Enter para manter o valor atual.");
-
-        System.out.print("Novo nome [" + existente.getNome() + "]: ");
-        String nome = lerOuManter(existente.getNome());
-
-        System.out.print("Novo estado [" + existente.getEstado() + "]: ");
-        String estadoInput = scanner.nextLine();
-        String estado = estadoInput.isEmpty() ? existente.getEstado() : estadoInput.toUpperCase();
-
-        System.out.print("Nova distância da capital [" + existente.getDistanciaDaCapital() + "]: ");
-        double dist = lerDoubleOuManter(existente.getDistanciaDaCapital());
-
-        Cidade atualizada = new Cidade(id, nome, estado, dist);
-        if (repository.atualizar(atualizada)) {
-            System.out.println("✔ Cidade atualizada com sucesso!");
-        } else {
-            System.out.println("✘ Erro ao atualizar.");
+        if (!removeu) {
+            throw new ValidacaoException("Cidade não encontrada para exclusão.");
         }
     }
 
+    public Cidade buscarPorId(int id) {
+        return repository.buscarPorId(id);
+    }
 
-    public void remover() {
-        System.out.println("\n--- REMOVER CIDADE ---");
-        System.out.print("Informe o ID da cidade a remover: ");
-        int id = Integer.parseInt(scanner.nextLine());
+    public ArrayList<Cidade> listarTodas() {
+        return repository.listarTodos();
+    }
 
-        Cidade c = repository.buscarPorId(id);
-        if (c == null) {
-            System.out.println("✘ Cidade não encontrada.");
-            return;
+    public int gerarProximoId() {
+        return repository.gerarProximoId();
+    }
+
+    private void validar(Cidade cidade) throws ValidacaoException {
+        if (cidade == null) {
+            throw new ValidacaoException("Cidade inválida.");
         }
 
-        System.out.println("Cidade a remover: " + c);
-        System.out.print("Confirmar remoção? (s/n): ");
-        String conf = scanner.nextLine();
+        if (cidade.getId() <= 0) {
+            throw new ValidacaoException("O ID da cidade deve ser maior que zero.");
+        }
 
-        if (conf.equalsIgnoreCase("s")) {
-            repository.remover(id);
-            System.out.println("✔ Cidade removida com sucesso!");
-        } else {
-            System.out.println("Operação cancelada.");
+        if (cidade.getNome() == null || cidade.getNome().trim().isEmpty()) {
+            throw new ValidacaoException("Informe o nome da cidade.");
+        }
+
+        if (cidade.getEstado() == null || cidade.getEstado().trim().isEmpty()) {
+            throw new ValidacaoException("Informe o estado da cidade.");
+        }
+
+        if (cidade.getEstado().trim().length() != 2) {
+            throw new ValidacaoException("O estado deve ser informado no formato UF. Exemplo: PE.");
+        }
+
+        if (cidade.getDistanciaDaCapital() < 0) {
+            throw new ValidacaoException("A distância da capital não pode ser negativa.");
         }
     }
-
-    private int lerIdUnico() {
-        int id;
-        do {
-            System.out.print("ID (único, ex: código IBGE): ");
-            id = Integer.parseInt(scanner.nextLine());
-            if (repository.idExiste(id)) System.out.println("✘ ID já cadastrado.");
-        } while (repository.idExiste(id));
-        return id;
-    }
-
-    private String lerOuManter(String atual) {
-        String e = scanner.nextLine();
-        return e.isEmpty() ? atual : e;
-    }
-
-    private double lerDoubleOuManter(double atual) {
-        String e = scanner.nextLine();
-        return e.isEmpty() ? atual : Double.parseDouble(e);
-    }
-
-    public CidadeRepository getRepository() { return repository; }
 }
