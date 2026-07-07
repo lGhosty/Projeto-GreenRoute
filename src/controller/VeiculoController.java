@@ -1,248 +1,120 @@
 package controller;
 
+import exception.ValidacaoException;
 import model.Veiculo;
 import model.VeiculoEletrico;
 import model.VeiculoHibrido;
 import repository.VeiculoRepository;
-import java.util.Scanner;
+
+import java.util.ArrayList;
 
 public class VeiculoController {
-    private VeiculoRepository repository;
-    private Scanner scanner;
 
-    public VeiculoController(VeiculoRepository repository, Scanner scanner) {
+    private final VeiculoRepository repository;
+
+    public VeiculoController(VeiculoRepository repository) {
         this.repository = repository;
-        this.scanner = scanner;
     }
 
-    public void cadastrarEletrico() {
-        System.out.println("\n--- CADASTRAR VEÍCULO ELÉTRICO ---");
+    public void salvar(Veiculo veiculo) throws ValidacaoException {
+        validar(veiculo);
 
-        int id = lerIdUnico();
-        System.out.print("Modelo: ");
-        String modelo = scanner.nextLine();
+        boolean salvou = repository.adicionar(veiculo);
 
-        System.out.print("Autonomia Máxima (km): ");
-        double autonomia = Double.parseDouble(scanner.nextLine());
-
-        System.out.print("Carga Atual da Bateria (%): ");
-        double carga = Double.parseDouble(scanner.nextLine());
-
-        System.out.print("Consumo (kWh/km): ");
-        double consumo = Double.parseDouble(scanner.nextLine());
-
-        System.out.print("Tempo de Recarga Completa (min): ");
-        int tempoCompleto = Integer.parseInt(scanner.nextLine());
-
-        System.out.print("Tipo de Conector (ex: CCS2, Tipo 2, CHAdeMO): ");
-        String conector = scanner.nextLine();
-
-        System.out.print("Tempo de Recarga Rápida (min): ");
-        int tempoRapido = Integer.parseInt(scanner.nextLine());
-
-        VeiculoEletrico ve = new VeiculoEletrico(id, modelo, autonomia, carga,
-                consumo, tempoCompleto, conector, tempoRapido);
-        if (repository.adicionar(ve)) {
-            System.out.println("✔ Veículo elétrico cadastrado com sucesso!");
-        } else {
-            System.out.println("✘ Erro: ID já cadastrado.");
+        if (!salvou) {
+            throw new ValidacaoException("Já existe um veículo cadastrado com esse ID.");
         }
     }
 
-    public void cadastrarHibrido() {
-        System.out.println("\n--- CADASTRAR VEÍCULO HÍBRIDO ---");
+    public void atualizar(Veiculo veiculo) throws ValidacaoException {
+        validar(veiculo);
 
-        int id = lerIdUnico();
-        System.out.print("Modelo: ");
-        String modelo = scanner.nextLine();
+        boolean atualizou = repository.atualizar(veiculo);
 
-        System.out.print("Autonomia Máxima Elétrica (km): ");
-        double autonomia = Double.parseDouble(scanner.nextLine());
-
-        System.out.print("Carga Atual da Bateria (%): ");
-        double carga = Double.parseDouble(scanner.nextLine());
-
-        System.out.print("Consumo Elétrico (kWh/km): ");
-        double consumo = Double.parseDouble(scanner.nextLine());
-
-        System.out.print("Tempo de Recarga Completa (min): ");
-        int tempoCompleto = Integer.parseInt(scanner.nextLine());
-
-        System.out.print("Capacidade do Tanque (litros): ");
-        double tanque = Double.parseDouble(scanner.nextLine());
-
-        System.out.print("Consumo Combustível (km/l): ");
-        double consumoComb = Double.parseDouble(scanner.nextLine());
-
-        System.out.print("Tipo de Combustível (Gasolina/Etanol): ");
-        String tipoComb = scanner.nextLine();
-
-        VeiculoHibrido vh = new VeiculoHibrido(id, modelo, autonomia, carga,
-                consumo, tempoCompleto, tanque, consumoComb, tipoComb);
-        if (repository.adicionar(vh)) {
-            System.out.println("✔ Veículo híbrido cadastrado com sucesso!");
-        } else {
-            System.out.println("✘ Erro: ID já cadastrado.");
+        if (!atualizou) {
+            throw new ValidacaoException("Veículo não encontrado para atualização.");
         }
     }
 
-    public void listarTodos() {
-        System.out.println("\n--- LISTA DE VEÍCULOS ---");
-        Veiculo[] todos = repository.listarTodos();
-        if (todos.length == 0) {
-            System.out.println("Nenhum veículo cadastrado.");
-            return;
-        }
-        for (Veiculo v : todos) {
-            System.out.println(v); // Chama o toString() de cada veículo
-        }
-        System.out.println("Total: " + todos.length + " veículo(s).");
-    }
+    public void remover(int id) throws ValidacaoException {
+        boolean removeu = repository.remover(id);
 
-    public void buscarPorId() {
-        System.out.println("\n--- BUSCAR VEÍCULO ---");
-        System.out.print("Informe o ID do veículo: ");
-        int id = Integer.parseInt(scanner.nextLine());
-
-        Veiculo v = repository.buscarPorId(id);
-        if (v != null) {
-            System.out.println("Veículo encontrado:");
-            System.out.println(v);
-        } else {
-            System.out.println("✘ Veículo com ID " + id + " não encontrado.");
+        if (!removeu) {
+            throw new ValidacaoException("Veículo não encontrado para exclusão.");
         }
     }
 
-    public void atualizar() {
-        System.out.println("\n--- ATUALIZAR VEÍCULO ---");
-        System.out.print("Informe o ID do veículo a atualizar: ");
-        int id = Integer.parseInt(scanner.nextLine());
+    public Veiculo buscarPorId(int id) {
+        return repository.buscarPorId(id);
+    }
 
-        Veiculo existente = repository.buscarPorId(id);
-        if (existente == null) {
-            System.out.println("✘ Veículo não encontrado.");
-            return;
+    public ArrayList<Veiculo> listarTodos() {
+        return repository.listarTodos();
+    }
+
+    public int gerarProximoId() {
+        return repository.gerarProximoId();
+    }
+
+    private void validar(Veiculo veiculo) throws ValidacaoException {
+        if (veiculo == null) {
+            throw new ValidacaoException("Veículo inválido.");
         }
 
-        System.out.println("Veículo atual: " + existente);
-        System.out.println("Tipo: " + existente.getTipo());
-        System.out.println("Preencha os novos dados (mesmo tipo: " + existente.getTipo() + "):");
-        Veiculo atualizado = null;
-
-        if (existente instanceof VeiculoEletrico) {
-            VeiculoEletrico ve = (VeiculoEletrico) existente;
-
-            System.out.print("Novo modelo [" + ve.getModelo() + "]: ");
-            String modelo = lerOuManter(ve.getModelo());
-
-            System.out.print("Nova autonomia máxima [" + ve.getAutonomiaMaxima() + "]: ");
-            double auto = lerDoubleOuManter(ve.getAutonomiaMaxima());
-
-            System.out.print("Nova carga atual (%) [" + ve.getCargaBateriaAtual() + "]: ");
-            double carga = lerDoubleOuManter(ve.getCargaBateriaAtual());
-
-            System.out.print("Novo consumo kWh/km [" + ve.getConsumoKwhPorKm() + "]: ");
-            double consumo = lerDoubleOuManter(ve.getConsumoKwhPorKm());
-
-            System.out.print("Novo tempo recarga completa [" + ve.getTempoRecargaCompleta() + "]: ");
-            int tempoC = lerIntOuManter(ve.getTempoRecargaCompleta());
-
-            System.out.print("Novo tipo conector [" + ve.getTipoConector() + "]: ");
-            String conector = lerOuManter(ve.getTipoConector());
-
-            System.out.print("Novo tempo recarga rápida [" + ve.getTempoRecargaRapida() + "]: ");
-            int tempoR = lerIntOuManter(ve.getTempoRecargaRapida());
-
-            atualizado = new VeiculoEletrico(id, modelo, auto, carga, consumo, tempoC, conector, tempoR);
-
-        } else if (existente instanceof VeiculoHibrido) {
-            VeiculoHibrido vh = (VeiculoHibrido) existente;
-
-            System.out.print("Novo modelo [" + vh.getModelo() + "]: ");
-            String modelo = lerOuManter(vh.getModelo());
-
-            System.out.print("Nova autonomia máxima [" + vh.getAutonomiaMaxima() + "]: ");
-            double auto = lerDoubleOuManter(vh.getAutonomiaMaxima());
-
-            System.out.print("Nova carga atual (%) [" + vh.getCargaBateriaAtual() + "]: ");
-            double carga = lerDoubleOuManter(vh.getCargaBateriaAtual());
-
-            System.out.print("Novo consumo kWh/km [" + vh.getConsumoKwhPorKm() + "]: ");
-            double consumo = lerDoubleOuManter(vh.getConsumoKwhPorKm());
-
-            System.out.print("Novo tempo recarga completa [" + vh.getTempoRecargaCompleta() + "]: ");
-            int tempoC = lerIntOuManter(vh.getTempoRecargaCompleta());
-
-            System.out.print("Nova capacidade tanque [" + vh.getCapacidadeTanqueCombustivel() + "]: ");
-            double tanque = lerDoubleOuManter(vh.getCapacidadeTanqueCombustivel());
-
-            System.out.print("Novo consumo combustível [" + vh.getConsumoCombustivel() + "]: ");
-            double consumoComb = lerDoubleOuManter(vh.getConsumoCombustivel());
-
-            System.out.print("Novo tipo combustível [" + vh.getTipoCombustivel() + "]: ");
-            String tipoComb = lerOuManter(vh.getTipoCombustivel());
-
-            atualizado = new VeiculoHibrido(id, modelo, auto, carga, consumo, tempoC, tanque, consumoComb, tipoComb);
+        if (veiculo.getId() <= 0) {
+            throw new ValidacaoException("O ID do veículo deve ser maior que zero.");
         }
 
-        if (atualizado != null && repository.atualizar(atualizado)) {
-            System.out.println("✔ Veículo atualizado com sucesso!");
-        } else {
-            System.out.println("✘ Erro ao atualizar.");
+        if (veiculo.getModelo() == null || veiculo.getModelo().trim().isEmpty()) {
+            throw new ValidacaoException("Informe o modelo do veículo.");
+        }
+
+        if (veiculo.getAutonomiaMaxima() <= 0) {
+            throw new ValidacaoException("A autonomia máxima deve ser maior que zero.");
+        }
+
+        if (veiculo.getCargaBateriaAtual() < 0 || veiculo.getCargaBateriaAtual() > 100) {
+            throw new ValidacaoException("A carga da bateria deve estar entre 0% e 100%.");
+        }
+
+        if (veiculo.getConsumoKwhPorKm() <= 0) {
+            throw new ValidacaoException("O consumo em kWh/km deve ser maior que zero.");
+        }
+
+        if (veiculo.getTempoRecargaCompleta() <= 0) {
+            throw new ValidacaoException("O tempo de recarga completa deve ser maior que zero.");
+        }
+
+        if (veiculo instanceof VeiculoEletrico) {
+            validarEletrico((VeiculoEletrico) veiculo);
+        }
+
+        if (veiculo instanceof VeiculoHibrido) {
+            validarHibrido((VeiculoHibrido) veiculo);
         }
     }
 
-    public void remover() {
-        System.out.println("\n--- REMOVER VEÍCULO ---");
-        System.out.print("Informe o ID do veículo a remover: ");
-        int id = Integer.parseInt(scanner.nextLine());
-
-        Veiculo v = repository.buscarPorId(id);
-        if (v == null) {
-            System.out.println("✘ Veículo não encontrado.");
-            return;
+    private void validarEletrico(VeiculoEletrico veiculo) throws ValidacaoException {
+        if (veiculo.getTipoConector() == null || veiculo.getTipoConector().trim().isEmpty()) {
+            throw new ValidacaoException("Informe o tipo de conector do veículo elétrico.");
         }
 
-        System.out.println("Veículo a remover: " + v);
-        System.out.print("Confirmar remoção? (s/n): ");
-        String confirmacao = scanner.nextLine();
-
-        if (confirmacao.equalsIgnoreCase("s")) {
-            repository.remover(id);
-            System.out.println("✔ Veículo removido com sucesso!");
-        } else {
-            System.out.println("Operação cancelada.");
+        if (veiculo.getTempoRecargaRapida() <= 0) {
+            throw new ValidacaoException("O tempo de recarga rápida deve ser maior que zero.");
         }
     }
 
-    private int lerIdUnico() {
-        int id;
-        do {
-            System.out.print("ID (único): ");
-            id = Integer.parseInt(scanner.nextLine());
-            if (repository.idExiste(id)) {
-                System.out.println("✘ ID já cadastrado. Escolha outro.");
-            }
-        } while (repository.idExiste(id));
-        return id;
-    }
+    private void validarHibrido(VeiculoHibrido veiculo) throws ValidacaoException {
+        if (veiculo.getCapacidadeTanqueCombustivel() <= 0) {
+            throw new ValidacaoException("A capacidade do tanque deve ser maior que zero.");
+        }
 
-    private String lerOuManter(String atual) {
-        String entrada = scanner.nextLine();
-        return entrada.isEmpty() ? atual : entrada;
-    }
+        if (veiculo.getConsumoCombustivel() <= 0) {
+            throw new ValidacaoException("O consumo de combustível deve ser maior que zero.");
+        }
 
-    private double lerDoubleOuManter(double atual) {
-        String entrada = scanner.nextLine();
-        return entrada.isEmpty() ? atual : Double.parseDouble(entrada);
-    }
-
-    private int lerIntOuManter(int atual) {
-        String entrada = scanner.nextLine();
-        return entrada.isEmpty() ? atual : Integer.parseInt(entrada);
-    }
-
-    public VeiculoRepository getRepository() {
-        return repository;
+        if (veiculo.getTipoCombustivel() == null || veiculo.getTipoCombustivel().trim().isEmpty()) {
+            throw new ValidacaoException("Informe o tipo de combustível do veículo híbrido.");
+        }
     }
 }
