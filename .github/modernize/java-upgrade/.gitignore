@@ -1,0 +1,17 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+/out/
+
+# Maven
+/target/
+
+# Arquivo de ambiente com chave da API
+.env
+
+# Arquivos temporários do IntelliJ
+/shelf/
+/httpRequests/
+/queries/
+/dataSources/
+/dataSources.local.xml

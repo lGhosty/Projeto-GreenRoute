@@ -1,0 +1,30 @@
+2026-07-07T15:47:20.812Z [INFO] ----------------------invoke appmod-report-event----------------------
+2026-07-07T15:47:20.812Z [INFO] [Tool.invoke]({name: appmod-report-event, modelId: auto, input: {
+  "projectPath": "c:\\Users\\ferna\\OneDrive\\Desktop\\Programation2\\Projeto GreenRoute",
+  "event": "precheckCompleted",
+  "phase": "precheck",
+  "status": "succeeded",
+  "details": {
+    "components": [
+      {
+        "name": "jdk",
+        "baseVersion": "17",
+        "targetVersion": "25"
+      }
+    ]
+  }
+}}).
+2026-07-07T15:47:20.813Z [INFO] [Tool.invoke] do invoke.
+2026-07-07T15:47:20.815Z [INFO] Project c:\Users\ferna\OneDrive\Desktop\Programation2\Projeto GreenRoute is a maven project, try to get java version from pom.xml
+2026-07-07T15:47:20.816Z [INFO] [Tool.invoke]({result: {
+  "message": "Event 'precheckCompleted' reported!\nSession ID: 20260707154720,\nSession Dir: c:\\Users\\ferna\\OneDrive\\Desktop\\Programation2\\Projeto GreenRoute\\.github\\modernize\\java-upgrade\\20260707154720"
+}}).
+2026-07-07T15:47:20.816Z [INFO] ----------------------invoked appmod-report-event----------------------
+2026-07-07T15:47:20.818Z [INFO] Project java version: 17
+2026-07-07T15:47:20.818Z [INFO] Maven project detected.
+2026-07-07T15:47:20.819Z [INFO] Build tool type: mvn
+2026-07-07T15:47:20.875Z [INFO] JDK: undefined
+2026-07-07T15:47:20.875Z [ERROR] Failed to detect or resolve JDK for the project at c:\Users\ferna\OneDrive\Desktop\Programation2\Projeto GreenRoute.
+2026-07-07T15:47:20.875Z [WARN] [ReportEventTool] Full project info unavailable, attempting lightweight fallback: UserError: Failed to detect or resolve JDK for the project at c:\Users\ferna\OneDrive\Desktop\Programation2\Projeto GreenRoute. Please ensure JDK 17 is installed and properly configured on the machine.
+2026-07-07T15:47:20.877Z [INFO] Maven project detected.
+2026-07-07T15:47:20.877Z [INFO] Project c:\Users\ferna\OneDrive\Desktop\Programation2\Projeto GreenRoute is a maven project, try to get java version from pom.xml
