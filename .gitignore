@@ -6,10 +6,10 @@
 # Maven
 /target/
 
-# Arquivo de ambiente com chave da API
+# Chave da API Gemini
 .env
 
-# Arquivos temporários do IntelliJ
+# Arquivos temporários
 /shelf/
 /httpRequests/
 /queries/
