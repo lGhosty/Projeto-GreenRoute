@@ -95,9 +95,11 @@ public class VeiculoPanel extends JPanel {
         txtTempoCompleto = new JTextField();
         txtConector = new JTextField();
         txtTempoRapido = new JTextField();
-        txtTanque = new JTextField("45");
-        txtConsumoCombustivel = new JTextField("14");
-        txtCombustivel = new JTextField("Gasolina");
+        txtTanque = new JTextField();
+        txtConsumoCombustivel = new JTextField();
+        txtCombustivel = new JTextField();
+
+        comboTipo.addActionListener(e -> atualizarCamposPorTipo());
 
         SwingHelper.adicionarCampo(formulario, "ID", txtId);
         SwingHelper.adicionarCampo(formulario, "Modelo", txtModelo);
@@ -113,6 +115,8 @@ public class VeiculoPanel extends JPanel {
         SwingHelper.adicionarCampo(formulario, "Tanque L", txtTanque);
         SwingHelper.adicionarCampo(formulario, "Consumo km/L", txtConsumoCombustivel);
         SwingHelper.adicionarCampo(formulario, "Combustível", txtCombustivel);
+
+        atualizarCamposPorTipo();
 
         return formulario;
     }
@@ -166,11 +170,15 @@ public class VeiculoPanel extends JPanel {
             txtBateria.setText(dados.getOrDefault("bateria", ""));
             txtConsumo.setText(dados.getOrDefault("consumo", ""));
             txtTempoCompleto.setText(dados.getOrDefault("tempoCompleto", ""));
+
             txtConector.setText(dados.getOrDefault("conector", ""));
             txtTempoRapido.setText(dados.getOrDefault("tempoRapido", "60"));
+
             txtTanque.setText(dados.getOrDefault("capacidadeTanque", "45"));
             txtConsumoCombustivel.setText(dados.getOrDefault("consumoCombustivel", "14"));
             txtCombustivel.setText(dados.getOrDefault("tipoCombustivel", "Gasolina"));
+
+            atualizarCamposPorTipo();
 
             SwingHelper.mostrarInfo(this, "Campos do veículo preenchidos pela IA. Revise antes de salvar.");
         } catch (Exception e) {
@@ -292,18 +300,22 @@ public class VeiculoPanel extends JPanel {
         if (veiculo instanceof VeiculoEletrico eletrico) {
             txtConector.setText(eletrico.getTipoConector());
             txtTempoRapido.setText(String.valueOf(eletrico.getTempoRecargaRapida()));
-            txtTanque.setText("45");
-            txtConsumoCombustivel.setText("14");
-            txtCombustivel.setText("Gasolina");
+
+            txtTanque.setText("");
+            txtConsumoCombustivel.setText("");
+            txtCombustivel.setText("");
         }
 
         if (veiculo instanceof VeiculoHibrido hibrido) {
             txtConector.setText("");
-            txtTempoRapido.setText("60");
+            txtTempoRapido.setText("");
+
             txtTanque.setText(String.valueOf(hibrido.getCapacidadeTanqueCombustivel()));
             txtConsumoCombustivel.setText(String.valueOf(hibrido.getConsumoCombustivel()));
             txtCombustivel.setText(hibrido.getTipoCombustivel());
         }
+
+        atualizarCamposPorTipo();
     }
 
     public void atualizarTabela() {
@@ -340,14 +352,52 @@ public class VeiculoPanel extends JPanel {
         txtBateria.setText("");
         txtConsumo.setText("");
         txtTempoCompleto.setText("");
+
         txtConector.setText("");
         txtTempoRapido.setText("");
-        txtTanque.setText("45");
-        txtConsumoCombustivel.setText("14");
-        txtCombustivel.setText("Gasolina");
+
+        txtTanque.setText("");
+        txtConsumoCombustivel.setText("");
+        txtCombustivel.setText("");
+
+        atualizarCamposPorTipo();
 
         if (tabela != null) {
             tabela.clearSelection();
+        }
+    }
+
+    private void atualizarCamposPorTipo() {
+        if (comboTipo == null ||
+                txtConector == null ||
+                txtTempoRapido == null ||
+                txtTanque == null ||
+                txtConsumoCombustivel == null ||
+                txtCombustivel == null) {
+            return;
+        }
+
+        String tipo = (String) comboTipo.getSelectedItem();
+
+        boolean eletrico = "Elétrico".equals(tipo);
+        boolean hibrido = "Híbrido".equals(tipo);
+
+        txtConector.setEnabled(eletrico);
+        txtTempoRapido.setEnabled(eletrico);
+
+        txtTanque.setEnabled(hibrido);
+        txtConsumoCombustivel.setEnabled(hibrido);
+        txtCombustivel.setEnabled(hibrido);
+
+        if (eletrico) {
+            txtTanque.setText("");
+            txtConsumoCombustivel.setText("");
+            txtCombustivel.setText("");
+        }
+
+        if (hibrido) {
+            txtConector.setText("");
+            txtTempoRapido.setText("");
         }
     }
 }
