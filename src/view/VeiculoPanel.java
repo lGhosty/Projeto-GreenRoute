@@ -31,15 +31,21 @@ public class VeiculoPanel extends JPanel {
     private JTextField txtBateria;
     private JTextField txtConsumo;
     private JTextField txtTempoCompleto;
+
     private JTextField txtConector;
     private JTextField txtTempoRapido;
+
     private JTextField txtTanque;
     private JTextField txtConsumoCombustivel;
     private JTextField txtCombustivel;
+
     private JTextArea txtCadastroIA;
 
     private JTable tabela;
     private DefaultTableModel modeloTabela;
+
+    private JPanel painelEletrico;
+    private JPanel painelHibrido;
 
     public VeiculoPanel(AppContext context, Runnable atualizarTelasCallback) {
         this.context = context;
@@ -52,7 +58,7 @@ public class VeiculoPanel extends JPanel {
     }
 
     private void criarComponentes() {
-        JPanel painelTopo = new JPanel(new BorderLayout(5, 5));
+        JPanel painelTopo = new JPanel(new BorderLayout(8, 8));
 
         painelTopo.add(criarPainelIA(), BorderLayout.NORTH);
         painelTopo.add(criarFormulario(), BorderLayout.CENTER);
@@ -71,7 +77,7 @@ public class VeiculoPanel extends JPanel {
                         "consumo de 0.15 kWh/km e leva 420 minutos para carregar totalmente. O conector dele é CCS2."
         );
 
-        JButton btnPreencherIA = new JButton("Preencher com IA");
+        JButton btnPreencherIA = new JButton("Preencher formulário com IA");
         btnPreencherIA.addActionListener(e -> preencherComIA());
 
         JPanel painelIA = new JPanel(new BorderLayout(5, 5));
@@ -83,8 +89,25 @@ public class VeiculoPanel extends JPanel {
     }
 
     private JPanel criarFormulario() {
-        JPanel formulario = new JPanel(new GridLayout(6, 4, 8, 8));
-        formulario.setBorder(BorderFactory.createTitledBorder("Dados do Veículo"));
+        JPanel formularioPrincipal = new JPanel(new GridLayout(1, 3, 10, 10));
+        formularioPrincipal.setBorder(BorderFactory.createTitledBorder("Formulário de Veículo"));
+
+        JPanel painelGeral = criarPainelDadosGerais();
+        painelEletrico = criarPainelDadosEletrico();
+        painelHibrido = criarPainelDadosHibrido();
+
+        formularioPrincipal.add(painelGeral);
+        formularioPrincipal.add(painelEletrico);
+        formularioPrincipal.add(painelHibrido);
+
+        atualizarCamposPorTipo();
+
+        return formularioPrincipal;
+    }
+
+    private JPanel criarPainelDadosGerais() {
+        JPanel painel = new JPanel(new GridLayout(8, 2, 6, 6));
+        painel.setBorder(BorderFactory.createTitledBorder("Dados Gerais"));
 
         txtId = new JTextField();
         txtModelo = new JTextField();
@@ -93,39 +116,53 @@ public class VeiculoPanel extends JPanel {
         txtBateria = new JTextField();
         txtConsumo = new JTextField();
         txtTempoCompleto = new JTextField();
+
+        comboTipo.addActionListener(e -> atualizarCamposPorTipo());
+
+        SwingHelper.adicionarCampo(painel, "ID", txtId);
+        SwingHelper.adicionarCampo(painel, "Modelo", txtModelo);
+        SwingHelper.adicionarCampo(painel, "Tipo", comboTipo);
+        SwingHelper.adicionarCampo(painel, "Autonomia máxima", txtAutonomia);
+        SwingHelper.adicionarCampo(painel, "Bateria atual %", txtBateria);
+        SwingHelper.adicionarCampo(painel, "Consumo kWh/km", txtConsumo);
+        SwingHelper.adicionarCampo(painel, "Recarga completa min", txtTempoCompleto);
+
+        return painel;
+    }
+
+    private JPanel criarPainelDadosEletrico() {
+        JPanel painel = new JPanel(new GridLayout(4, 2, 6, 6));
+        painel.setBorder(BorderFactory.createTitledBorder("Dados do Elétrico"));
+
         txtConector = new JTextField();
         txtTempoRapido = new JTextField();
+
+        SwingHelper.adicionarCampo(painel, "Conector", txtConector);
+        SwingHelper.adicionarCampo(painel, "Recarga rápida min", txtTempoRapido);
+
+        return painel;
+    }
+
+    private JPanel criarPainelDadosHibrido() {
+        JPanel painel = new JPanel(new GridLayout(4, 2, 6, 6));
+        painel.setBorder(BorderFactory.createTitledBorder("Dados do Híbrido"));
+
         txtTanque = new JTextField();
         txtConsumoCombustivel = new JTextField();
         txtCombustivel = new JTextField();
 
-        comboTipo.addActionListener(e -> atualizarCamposPorTipo());
+        SwingHelper.adicionarCampo(painel, "Tanque L", txtTanque);
+        SwingHelper.adicionarCampo(painel, "Consumo km/L", txtConsumoCombustivel);
+        SwingHelper.adicionarCampo(painel, "Combustível", txtCombustivel);
 
-        SwingHelper.adicionarCampo(formulario, "ID", txtId);
-        SwingHelper.adicionarCampo(formulario, "Modelo", txtModelo);
-        SwingHelper.adicionarCampo(formulario, "Tipo", comboTipo);
-        SwingHelper.adicionarCampo(formulario, "Autonomia máxima", txtAutonomia);
-
-        SwingHelper.adicionarCampo(formulario, "Bateria atual %", txtBateria);
-        SwingHelper.adicionarCampo(formulario, "Consumo kWh/km", txtConsumo);
-        SwingHelper.adicionarCampo(formulario, "Recarga completa min", txtTempoCompleto);
-        SwingHelper.adicionarCampo(formulario, "Conector", txtConector);
-
-        SwingHelper.adicionarCampo(formulario, "Recarga rápida min", txtTempoRapido);
-        SwingHelper.adicionarCampo(formulario, "Tanque L", txtTanque);
-        SwingHelper.adicionarCampo(formulario, "Consumo km/L", txtConsumoCombustivel);
-        SwingHelper.adicionarCampo(formulario, "Combustível", txtCombustivel);
-
-        atualizarCamposPorTipo();
-
-        return formulario;
+        return painel;
     }
 
     private JPanel criarBotoes() {
-        JButton btnNovo = new JButton("Novo");
-        JButton btnSalvar = new JButton("Salvar");
-        JButton btnAtualizar = new JButton("Atualizar");
-        JButton btnExcluir = new JButton("Excluir");
+        JButton btnNovo = new JButton("Novo cadastro");
+        JButton btnSalvar = new JButton("Salvar veículo");
+        JButton btnAtualizar = new JButton("Atualizar veículo");
+        JButton btnExcluir = new JButton("Excluir veículo");
 
         btnNovo.addActionListener(e -> limparFormulario());
         btnSalvar.addActionListener(e -> salvar());
@@ -149,6 +186,7 @@ public class VeiculoPanel extends JPanel {
 
         tabela = new JTable(modeloTabela);
         tabela.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
         tabela.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 selecionarDaTabela();
@@ -373,7 +411,9 @@ public class VeiculoPanel extends JPanel {
                 txtTempoRapido == null ||
                 txtTanque == null ||
                 txtConsumoCombustivel == null ||
-                txtCombustivel == null) {
+                txtCombustivel == null ||
+                painelEletrico == null ||
+                painelHibrido == null) {
             return;
         }
 
@@ -384,10 +424,12 @@ public class VeiculoPanel extends JPanel {
 
         txtConector.setEnabled(eletrico);
         txtTempoRapido.setEnabled(eletrico);
+        painelEletrico.setEnabled(eletrico);
 
         txtTanque.setEnabled(hibrido);
         txtConsumoCombustivel.setEnabled(hibrido);
         txtCombustivel.setEnabled(hibrido);
+        painelHibrido.setEnabled(hibrido);
 
         if (eletrico) {
             txtTanque.setText("");
